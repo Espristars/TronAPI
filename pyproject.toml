@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "TronAPI"
+version = "0.1.0"
+description = "TronAPI"
+authors = ["KrisRock"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.0"
+uvicorn = "^0.22.0"
+psycopg2-binary = "^2.9.0"
+sqlalchemy = "^1.4.0"
+asyncpg = "^0.29.0"
+asgi-lifespan = "^2.1.0"
+tronpy = "^0.5.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

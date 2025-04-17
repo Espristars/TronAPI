@@ -4,14 +4,14 @@ from models import WalletRequest, AsyncSessionLocal
 
 @pytest.mark.asyncio
 async def test_db_write():
-    wallet_address = "TY7xLdvk8b2xr4qZyTEPqaM8Z6T5zVqabc"
+    wallet_address = "TNMcQVGPzqH9ZfMCSY4PNrukevtDgp24dK"
     async with AsyncSessionLocal() as session:
         record = WalletRequest(
             wallet=wallet_address,
             bandwidth=1200,
             energy=600,
             balance_trx=1234.56,
-            created_at=datetime
+            created_at=datetime.now()
         )
         session.add(record)
         await session.commit()

@@ -5,17 +5,28 @@ from datetime import datetime
 import asyncio
 from models import AsyncSessionLocal, engine, Base, WalletRequest
 from tron import get_tron_info
+from contextlib import asynccontextmanager
+import logging
+from tronpy.keys import is_base58check_address
+
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 
 async def init_models():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_models()
+    yield
+    pass
 
-asyncio.create_task(init_models())
-
-app = FastAPI()
-
+app = FastAPI(lifespan=lifespan)
 
 class AddressRequest(BaseModel):
     address: str
@@ -36,6 +47,9 @@ async def get_db():
 
 @app.post("/wallet", response_model=TronInfoResponse)
 async def get_wallet_info(request: AddressRequest, db=Depends(get_db)):
+    if not is_base58check_address(request.address):
+        raise HTTPException(status_code=400, detail="Невалидный TRON-адрес")
+
     try:
         info = await asyncio.get_event_loop().run_in_executor(None, get_tron_info, request.address)
     except Exception as e:
@@ -46,7 +60,7 @@ async def get_wallet_info(request: AddressRequest, db=Depends(get_db)):
         bandwidth=info["bandwidth"],
         energy=info["energy"],
         balance_trx=info["balance_trx"],
-        created_at=datetime
+        created_at=datetime.now()
     )
     db.add(wallet_record)
     await db.commit()

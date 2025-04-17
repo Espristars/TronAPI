@@ -1,19 +1,25 @@
 import os
 import tempfile
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
 from fastapi.testclient import TestClient
-from models import Base
 from main import app, get_db
+import asyncio
 
 db_fd, db_path = tempfile.mkstemp()
-SQLALCHEMY_DATABASE_URL = "sqlite:///" + db_path
+SQLALCHEMY_DATABASE_URL = "postgresql+asyncpg://user:password@localhost:5432/db"
 
-engine_test = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
+engine_test = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
+TestingSessionLocal = sessionmaker(bind=engine_test, class_=AsyncSession, expire_on_commit=False)
 
-Base.metadata.create_all(bind=engine_test)
+Base = declarative_base()
+
+async def create_db():
+    async with engine_test.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+asyncio.run(create_db())
 
 
 @pytest.fixture(scope="module")
@@ -45,4 +51,3 @@ def client():
 def cleanup():
     yield
     os.close(db_fd)
-    os.unlink(db_path)
